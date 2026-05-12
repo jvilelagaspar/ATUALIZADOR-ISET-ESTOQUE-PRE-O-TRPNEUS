@@ -1,823 +1,650 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Atualizador iSET — TR Pneus</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-:root{
-  --bg:#0A0A0F;
-  --bg-2:#13131B;
-  --bg-3:#1A1A26;
-  --bg-input:#10101A;
-  --line:rgba(255,255,255,0.06);
-  --line-strong:rgba(255,255,255,0.12);
-  --orange:#FF5722;
-  --orange-2:#FF8A50;
-  --yellow:#FFC857;
-  --green:#27D796;
-  --red:#FF5470;
-  --text:#F5F5FA;
-  --text-2:#9090A0;
-  --text-3:#5A5A6E;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{overflow-x:hidden}
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  font-feature-settings:"cv11","ss01";
-  -webkit-font-smoothing:antialiased;
-  position:relative;
-}
-body::before{
-  content:'';
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(ellipse 800px 600px at 20% 10%, rgba(255,87,34,0.08), transparent 60%),
-    radial-gradient(ellipse 600px 500px at 90% 80%, rgba(255,138,80,0.06), transparent 60%);
-  pointer-events:none;
-  z-index:0;
-}
-.grid-bg{
-  position:fixed;
-  inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-  background-size:40px 40px;
-  mask-image:radial-gradient(ellipse at center, black 30%, transparent 80%);
-  pointer-events:none;
-  z-index:0;
-}
-.shell{
-  position:relative;
-  z-index:1;
-  max-width:1080px;
-  margin:0 auto;
-  padding:32px 24px 80px;
-}
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:48px;
-  padding:14px 20px;
-  background:rgba(19,19,27,0.6);
-  border:1px solid var(--line);
-  border-radius:14px;
-  backdrop-filter:blur(20px);
-}
-.brand{display:flex;align-items:center;gap:12px}
-.logo{
-  width:36px;height:36px;
-  background:linear-gradient(135deg,var(--orange),#D63A1A);
-  border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:800;font-size:14px;color:white;
-  font-family:'Space Grotesk',sans-serif;
-  letter-spacing:-0.5px;
-  box-shadow:0 8px 24px rgba(255,87,34,0.3);
-}
-.brand-name{
-  font-family:'Space Grotesk',sans-serif;
-  font-weight:700;font-size:15px;letter-spacing:-0.3px;
-}
-.brand-name span{color:var(--orange)}
-.status{
-  display:flex;align-items:center;gap:8px;
-  font-size:12px;color:var(--text-2);
-  font-family:'JetBrains Mono',monospace;
-}
-.dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--green);
-  box-shadow:0 0 12px var(--green);
-  animation:pulse 2s infinite;
-}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-.hero{text-align:center;margin-bottom:64px;position:relative}
-.tag{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:6px 14px;
-  background:rgba(255,87,34,0.08);
-  border:1px solid rgba(255,87,34,0.2);
-  border-radius:100px;
-  font-size:12px;color:var(--orange-2);
-  font-family:'JetBrains Mono',monospace;
-  margin-bottom:24px;letter-spacing:0.5px;
-}
-h1{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:clamp(40px,7vw,72px);
-  font-weight:700;line-height:1;
-  letter-spacing:-0.04em;margin-bottom:20px;
-}
-h1 .accent{
-  background:linear-gradient(135deg,var(--orange) 0%,var(--orange-2) 50%,#FFB088 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  background-clip:text;font-style:italic;
-}
-.lead{
-  color:var(--text-2);font-size:17px;
-  max-width:520px;margin:0 auto;line-height:1.6;
-}
-.steps{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:14px;margin-bottom:32px;
-}
-.step{
-  background:var(--bg-2);border:1px solid var(--line);
-  border-radius:14px;padding:14px 16px;
-  display:flex;align-items:center;gap:12px;
-  transition:all 0.3s;
-}
-.step.active{
-  border-color:rgba(255,87,34,0.3);
-  background:linear-gradient(135deg,rgba(255,87,34,0.05),transparent);
-}
-.step-num{
-  width:28px;height:28px;border-radius:8px;
-  background:var(--bg-3);
-  display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:13px;
-  font-family:'Space Grotesk',sans-serif;flex-shrink:0;
-}
-.step.active .step-num{background:var(--orange);color:white}
-.step-info{font-size:13px;line-height:1.3}
-.step-info b{display:block;font-weight:600;margin-bottom:2px}
-.step-info span{color:var(--text-2);font-size:11px}
-.card{
-  background:var(--bg-2);border:1px solid var(--line);
-  border-radius:20px;padding:28px;margin-bottom:20px;
-  transition:border-color 0.3s;
-}
-.card:hover{border-color:var(--line-strong)}
-.card-header{
-  display:flex;align-items:center;gap:12px;margin-bottom:24px;
-}
-.card-num{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:11px;font-weight:700;letter-spacing:1.5px;
-  color:var(--orange);
-  background:rgba(255,87,34,0.08);
-  border:1px solid rgba(255,87,34,0.15);
-  padding:4px 10px;border-radius:6px;
-}
-.card-title{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:20px;font-weight:600;letter-spacing:-0.02em;
-}
-.file-row{margin-bottom:14px}
-.file-row:last-child{margin-bottom:0}
-.file-label{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:8px;font-size:12px;color:var(--text-2);
-  font-family:'JetBrains Mono',monospace;letter-spacing:0.3px;
-}
-.file-label .req{color:var(--orange)}
-.file-drop{
-  display:flex;align-items:center;gap:14px;
-  padding:18px 20px;background:var(--bg-input);
-  border:1.5px dashed var(--line-strong);
-  border-radius:14px;cursor:pointer;
-  transition:all 0.25s ease;position:relative;overflow:hidden;
-}
-.file-drop:hover{border-color:var(--orange);background:rgba(255,87,34,0.03)}
-.file-drop.has{
-  border-style:solid;border-color:var(--green);
-  background:linear-gradient(135deg,rgba(39,215,150,0.05),transparent);
-}
-.file-drop input{display:none}
-.file-icon-box{
-  width:42px;height:42px;border-radius:10px;
-  background:var(--bg-3);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;transition:all 0.25s;
-}
-.has .file-icon-box{background:rgba(39,215,150,0.1)}
-.file-icon-box svg{width:20px;height:20px;stroke:var(--text-2);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.has .file-icon-box svg{stroke:var(--green)}
-.file-text{flex:1;min-width:0}
-.file-text-main{
-  font-weight:500;font-size:14px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.file-text-sub{
-  font-size:11px;color:var(--text-3);
-  font-family:'JetBrains Mono',monospace;margin-top:3px;
-}
-.has .file-text-sub{color:var(--green)}
-.file-clear{
-  background:transparent;border:none;color:var(--red);
-  cursor:pointer;padding:8px;border-radius:8px;
-  display:none;transition:background 0.2s;
-}
-.file-clear:hover{background:rgba(255,84,112,0.1)}
-.has .file-clear{display:block}
-.file-clear svg{width:16px;height:16px}
-.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.mode-card{
-  padding:18px 16px;background:var(--bg-input);
-  border:1.5px solid var(--line);border-radius:14px;
-  cursor:pointer;text-align:center;transition:all 0.2s;
-}
-.mode-card:hover{border-color:var(--line-strong)}
-.mode-card.active{
-  border-color:var(--orange);
-  background:linear-gradient(135deg,rgba(255,87,34,0.08),transparent);
-}
-.mode-icon{font-size:22px;margin-bottom:8px}
-.mode-name{font-weight:600;font-size:13px;margin-bottom:2px}
-.mode-desc{font-size:11px;color:var(--text-3);font-family:'JetBrains Mono',monospace}
-.mode-card.active .mode-name{color:var(--orange-2)}
-.cta{
-  width:100%;padding:22px;
-  background:linear-gradient(135deg,var(--orange) 0%,#E63E10 100%);
-  color:white;border:none;border-radius:16px;
-  font-family:'Space Grotesk',sans-serif;
-  font-size:16px;font-weight:700;letter-spacing:0.5px;
-  cursor:pointer;transition:all 0.25s;
-  box-shadow:0 12px 40px rgba(255,87,34,0.3),inset 0 1px 0 rgba(255,255,255,0.2);
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  text-transform:uppercase;margin:32px 0;
-}
-.cta:hover:not(:disabled){
-  transform:translateY(-2px);
-  box-shadow:0 16px 50px rgba(255,87,34,0.4),inset 0 1px 0 rgba(255,255,255,0.2);
-}
-.cta:active:not(:disabled){transform:translateY(0)}
-.cta:disabled{opacity:0.4;cursor:not-allowed;background:var(--bg-3);box-shadow:none}
-.cta svg{width:20px;height:20px;stroke-width:2.2}
-.log-wrap{
-  background:#08080F;border:1px solid var(--line);
-  border-radius:14px;overflow:hidden;
-}
-.log-head{
-  padding:12px 18px;background:var(--bg-2);
-  border-bottom:1px solid var(--line);
-  display:flex;align-items:center;gap:8px;
-  font-family:'JetBrains Mono',monospace;
-  font-size:11px;color:var(--text-2);
-}
-.log-head .dots{display:flex;gap:6px}
-.log-head .dots i{width:10px;height:10px;border-radius:50%;background:var(--bg-3)}
-.log-head .dots i:first-child{background:#FF5F56}
-.log-head .dots i:nth-child(2){background:#FFBD2E}
-.log-head .dots i:nth-child(3){background:#27C93F}
-.log{
-  padding:18px 20px;
-  font-family:'JetBrains Mono',monospace;
-  font-size:12.5px;height:280px;overflow-y:auto;
-  white-space:pre-wrap;line-height:1.7;color:var(--text-2);
-}
-.log::-webkit-scrollbar{width:6px}
-.log::-webkit-scrollbar-track{background:transparent}
-.log::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
-.log .ok{color:var(--green)}
-.log .warn{color:var(--yellow)}
-.log .err{color:var(--red)}
-.log .info{color:var(--orange-2)}
-.log .dim{color:var(--text-3)}
-.result{
-  display:none;margin-top:24px;
-  background:var(--bg-2);
-  border:1px solid rgba(39,215,150,0.3);
-  border-radius:20px;padding:32px;
-  position:relative;overflow:hidden;
-}
-.result::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 600px 200px at 50% 0%, rgba(39,215,150,0.08), transparent 60%);
-  pointer-events:none;
-}
-.result.show{display:block;animation:fadeInUp 0.5s ease}
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.result-head{display:flex;align-items:center;gap:12px;margin-bottom:24px;position:relative}
-.result-icon{
-  width:48px;height:48px;
-  background:rgba(39,215,150,0.1);
-  border:1px solid rgba(39,215,150,0.2);
-  border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-}
-.result-icon svg{width:24px;height:24px;stroke:var(--green);stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.result-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700}
-.result-subtitle{color:var(--text-2);font-size:13px;margin-top:2px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;position:relative}
-.stat{
-  background:var(--bg-3);border:1px solid var(--line);
-  border-radius:14px;padding:18px;text-align:center;
-}
-.stat-val{
-  font-family:'Space Grotesk',sans-serif;
-  font-size:36px;font-weight:700;color:var(--orange);
-  letter-spacing:-0.04em;line-height:1;
-}
-.stat-lbl{
-  font-size:11px;color:var(--text-2);margin-top:6px;
-  font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;
-}
-.btn-dl{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  width:100%;padding:18px;
-  background:var(--green);color:#0A0A0F;border:none;
-  border-radius:14px;
-  font-family:'Space Grotesk',sans-serif;
-  font-weight:700;font-size:14px;cursor:pointer;
-  transition:all 0.2s;letter-spacing:0.5px;text-transform:uppercase;
-}
-.btn-dl:hover{background:#22C088;transform:translateY(-1px)}
-.btn-dl svg{width:18px;height:18px;stroke-width:2.5}
-.next{
-  margin-top:20px;padding:20px;
-  background:var(--bg-3);border:1px solid var(--line);
-  border-radius:14px;font-size:13px;line-height:1.8;color:var(--text-2);
-}
-.next b{color:var(--yellow);font-family:'Space Grotesk',sans-serif;font-size:11px;letter-spacing:1px}
-.next ol{margin-top:8px;padding-left:24px}
-.next li{margin-bottom:4px}
-.next strong{color:var(--text)}
-.footer{
-  margin-top:80px;padding:24px;text-align:center;
-  font-size:12px;color:var(--text-3);
-  font-family:'JetBrains Mono',monospace;
-  border-top:1px solid var(--line);
-}
-@media (max-width:680px){
-  .shell{padding:16px}
-  .topbar{flex-direction:column;gap:10px;text-align:center}
-  .steps,.mode-grid,.stats{grid-template-columns:1fr}
-  .card{padding:20px}
-  .hero{margin-bottom:40px}
-}
-</style>
-</head>
-<body>
-<div class="grid-bg"></div>
-<div class="shell">
+// ===== TR PNEUS · SUITE v2.0 =====
+// Build 2026.05.12 · Gaspar/SC
 
-<div class="topbar">
-  <div class="brand">
-    <div class="logo">TR</div>
-    <div class="brand-name">tr<span>pneus</span> · sistemas</div>
-  </div>
-  <div class="status">
-    <span class="dot"></span>
-    SISTEMA OPERACIONAL
-  </div>
-</div>
+const HEADERS_ISET = ['id','type','status','sku','name','model','description_small','description_full','description_plaintext','quantity','quantity_min_buy','quantity_max_buy','quantity_critical','stock_method','image_default','images','price','price_gross','date_available','weight','free_shipping','handling_days','gift','gift_price','gtin','mpn','ncm','allow_buy','dimensions','tags','kit_products','points','page_title','page_keywords','page_description','page_slug','group_id','template'];
+const STOCK_METHOD = 'product';
+const QTD_MAX_BUY = 10;
 
-<div class="hero">
-  <div class="tag">
-    <span style="width:6px;height:6px;border-radius:50%;background:var(--orange)"></span>
-    ATUALIZADOR ISET v1.0
-  </div>
-  <h1>Atualize estoque<br>e preço em <span class="accent">segundos</span></h1>
-  <p class="lead">Cruzamento automático entre tabela do fornecedor, estoque do galpão e produtos do site. Sem erros. Sem trabalho manual.</p>
-</div>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-<div class="steps">
-  <div class="step active" id="step-1">
-    <div class="step-num">1</div>
-    <div class="step-info"><b>Selecionar arquivos</b><span>3 arquivos necessários</span></div>
-  </div>
-  <div class="step" id="step-2">
-    <div class="step-num">2</div>
-    <div class="step-info"><b>Processar dados</b><span>cruzamento automático</span></div>
-  </div>
-  <div class="step" id="step-3">
-    <div class="step-num">3</div>
-    <div class="step-info"><b>Baixar planilha</b><span>pronta para iSET</span></div>
-  </div>
-</div>
+let arquivos = { site: null, precos: null, estoque: null };
+let modoAtual = 'ambos';
+let planilhaGerada = null;
+let relatorioCompleto = null;
 
-<div class="card">
-  <div class="card-header">
-    <div class="card-num">01 / ENTRADA</div>
-    <div class="card-title">Arquivos de entrada</div>
-  </div>
+// ============= NAVEGAÇÃO =============
+function navigate(page) {
+  document.querySelectorAll('.tool-page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('btn-back').classList.toggle('show', page !== 'home');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  <div class="file-row">
-    <div class="file-label">
-      <span>EXPORTAÇÃO DO SITE · .xlsx</span>
-      <span class="req">obrigatório</span>
-    </div>
-    <label class="file-drop" id="d-site">
-      <input type="file" id="f-site" accept=".xlsx">
-      <div class="file-icon-box">
-        <svg viewBox="0 0 24 24"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg>
-      </div>
-      <div class="file-text">
-        <div class="file-text-main" id="n-site">Clique ou arraste arquivo .xlsx aqui</div>
-        <div class="file-text-sub" id="s-site">aguardando seleção</div>
-      </div>
-      <button class="file-clear" onclick="clearFile(event,'site')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </label>
-  </div>
-
-  <div class="file-row">
-    <div class="file-label">
-      <span>TABELA DE PREÇOS TR PNEUS · .pdf ou .xlsx</span>
-    </div>
-    <label class="file-drop" id="d-precos">
-      <input type="file" id="f-precos" accept=".pdf,.xlsx">
-      <div class="file-icon-box">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9.5a2.5 2.5 0 0 1 5 0M9 14.5a2.5 2.5 0 0 0 5 0"/></svg>
-      </div>
-      <div class="file-text">
-        <div class="file-text-main" id="n-precos">Clique para selecionar tabela do fornecedor</div>
-        <div class="file-text-sub" id="s-precos">aguardando seleção</div>
-      </div>
-      <button class="file-clear" onclick="clearFile(event,'precos')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </label>
-  </div>
-
-  <div class="file-row">
-    <div class="file-label">
-      <span>ESTOQUE DO GALPÃO · .pdf ou .xlsx</span>
-    </div>
-    <label class="file-drop" id="d-estoque">
-      <input type="file" id="f-estoque" accept=".pdf,.xlsx">
-      <div class="file-icon-box">
-        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      </div>
-      <div class="file-text">
-        <div class="file-text-main" id="n-estoque">Clique para selecionar estoque atual</div>
-        <div class="file-text-sub" id="s-estoque">aguardando seleção</div>
-      </div>
-      <button class="file-clear" onclick="clearFile(event,'estoque')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </label>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <div class="card-num">02 / MODO</div>
-    <div class="card-title">O que atualizar?</div>
-  </div>
-  <div class="mode-grid">
-    <div class="mode-card active" data-mode="ambos" onclick="setMode('ambos')">
-      <div class="mode-icon">⚡</div>
-      <div class="mode-name">Estoque + Preço</div>
-      <div class="mode-desc">recomendado</div>
-    </div>
-    <div class="mode-card" data-mode="estoque" onclick="setMode('estoque')">
-      <div class="mode-icon">📦</div>
-      <div class="mode-name">Apenas Estoque</div>
-      <div class="mode-desc">só quantidades</div>
-    </div>
-    <div class="mode-card" data-mode="preco" onclick="setMode('preco')">
-      <div class="mode-icon">💰</div>
-      <div class="mode-name">Apenas Preço</div>
-      <div class="mode-desc">só valores</div>
-    </div>
-  </div>
-</div>
-
-<button class="cta" id="cta" onclick="processar()" disabled>
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
-  GERAR PLANILHA DE ATUALIZAÇÃO
-</button>
-
-<div class="card" style="padding:0;overflow:hidden">
-  <div class="log-wrap">
-    <div class="log-head">
-      <div class="dots"><i></i><i></i><i></i></div>
-      <span style="margin-left:8px">~/atualizador-iset · console</span>
-    </div>
-    <div class="log" id="log"><span class="dim">$ aguardando arquivos...</span>
-<span class="dim">$ pronto para processar quando você quiser</span></div>
-  </div>
-</div>
-
-<div class="result" id="result">
-  <div class="result-head">
-    <div class="result-icon">
-      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-    </div>
-    <div>
-      <div class="result-title">Planilha gerada com sucesso</div>
-      <div class="result-subtitle">Pronta para importar na iSET</div>
-    </div>
-  </div>
-  <div class="stats" id="stats"></div>
-  <button class="btn-dl" onclick="baixarPlanilha()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    BAIXAR PLANILHA .XLSX
-  </button>
-  <div class="next">
-    <b>PRÓXIMOS PASSOS · iSET</b>
-    <ol>
-      <li>Acesse <strong>Ferramentas → Importação/Exportação → Produtos → IMPORTAR</strong></li>
-      <li>Faça upload da planilha que você acabou de baixar</li>
-      <li>☑️ <strong>MARQUE</strong> a caixa "Produtos existentes que correspondam o ID..."</li>
-      <li>Click em <strong>IMPORTAR PRODUTOS</strong></li>
-    </ol>
-  </div>
-</div>
-
-<div class="footer">
-  TR Pneus · Sistemas Internos · Build 2026.05.06 · feito com cuidado em Gaspar/SC
-</div>
-
-</div>
-
-<script>
-const HEADERS_ISET=['id','type','status','sku','name','model',null,null,null,'quantity','quantity_min_buy','quantity_max_buy','quantity_critical','stock_method',null,null,'price','price_gross','date_available','weight','free_shipping','handling_days','gift','gift_price','gtin','mpn','ncm','allow_buy','dimensions','tags','kit_products','points','page_title','page_keywords','page_description','page_slug','group_id','template'];
-const STOCK_METHOD='product',TYPE='material',QTD_MAX_BUY=10;
-pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-let arquivos={site:null,precos:null,estoque:null};
-let modoAtual='ambos';
-let planilhaGerada=null;
-
-function log(msg,tipo=''){
-  const el=document.getElementById('log');
-  const span=document.createElement('span');
-  if(tipo)span.className=tipo;
-  span.textContent=msg+'\n';
+// ============= LOG =============
+function log(msg, tipo = '') {
+  const el = document.getElementById('log');
+  const span = document.createElement('span');
+  if (tipo) span.className = tipo;
+  span.textContent = msg + '\n';
   el.appendChild(span);
-  el.scrollTop=el.scrollHeight;
+  el.scrollTop = el.scrollHeight;
 }
-function clearLog(){document.getElementById('log').innerHTML=''}
-function setMode(modo){
-  modoAtual=modo;
-  document.querySelectorAll('.mode-card').forEach(el=>el.classList.remove('active'));
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+// ============= MODO =============
+function setMode(modo) {
+  modoAtual = modo;
+  document.querySelectorAll('.mode-card').forEach(el => el.classList.remove('active'));
   document.querySelector(`[data-mode="${modo}"]`).classList.add('active');
   validarBotao();
 }
-function clearFile(ev,tipo){
-  ev.preventDefault();ev.stopPropagation();
-  arquivos[tipo]=null;
-  document.getElementById(`f-${tipo}`).value='';
-  document.getElementById(`n-${tipo}`).textContent={
-    site:'Clique ou arraste arquivo .xlsx aqui',
-    precos:'Clique para selecionar tabela do fornecedor',
-    estoque:'Clique para selecionar estoque atual'
-  }[tipo];
-  document.getElementById(`s-${tipo}`).textContent='aguardando seleção';
+
+// ============= ARQUIVOS =============
+function clearFile(ev, tipo) {
+  ev.preventDefault(); ev.stopPropagation();
+  arquivos[tipo] = null;
+  document.getElementById(`f-${tipo}`).value = '';
+  const labels = {
+    site: 'Clique ou arraste .xlsx aqui',
+    precos: 'Selecionar tabela do fornecedor',
+    estoque: 'Selecionar estoque atual'
+  };
+  document.getElementById(`n-${tipo}`).textContent = labels[tipo];
+  document.getElementById(`s-${tipo}`).textContent = 'aguardando seleção';
   document.getElementById(`d-${tipo}`).classList.remove('has');
   validarBotao();
 }
-['site','precos','estoque'].forEach(tipo=>{
-  document.getElementById(`f-${tipo}`).addEventListener('change',e=>{
-    const f=e.target.files[0];if(!f)return;
-    arquivos[tipo]=f;
-    document.getElementById(`n-${tipo}`).textContent=f.name;
-    document.getElementById(`s-${tipo}`).textContent=`✓ ${(f.size/1024).toFixed(1)} KB carregado`;
+['site', 'precos', 'estoque'].forEach(tipo => {
+  document.getElementById(`f-${tipo}`).addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    arquivos[tipo] = f;
+    document.getElementById(`n-${tipo}`).textContent = f.name;
+    document.getElementById(`s-${tipo}`).textContent = `✓ ${(f.size / 1024).toFixed(1)} KB carregado`;
     document.getElementById(`d-${tipo}`).classList.add('has');
     validarBotao();
   });
 });
-function validarBotao(){
-  const tem=arquivos.site;
-  const temPreco=arquivos.precos||modoAtual==='estoque';
-  const temEstoque=arquivos.estoque||modoAtual==='preco';
-  const valido=tem&&temPreco&&temEstoque;
-  document.getElementById('cta').disabled=!valido;
-  document.getElementById('step-1').classList.toggle('active',!valido);
-  document.getElementById('step-2').classList.toggle('active',valido);
+
+function validarBotao() {
+  const valido = arquivos.site
+    && (arquivos.precos || modoAtual === 'estoque')
+    && (arquivos.estoque || modoAtual === 'preco');
+  document.getElementById('cta').disabled = !valido;
 }
-function normalizar(t){
-  if(!t)return'';
-  return String(t).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+
+// ============= NORMALIZAÇÃO =============
+function normalizar(t) {
+  if (!t) return '';
+  return String(t).toUpperCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ').trim();
 }
-function extrairMedida(texto){
-  if(!texto)return null;
-  const t=normalizar(texto);let m;
-  m=t.match(/(LT)?(\d{3})\/(\d{2})\s?R(\d{2})(C|LT)?/);
-  if(m)return`${m[1]||''}${m[2]}/${m[3]}R${m[4]}${m[5]||''}`;
-  m=t.match(/(\d{2})X(\d{1,2})\.?(\d{2})R(\d{2})(LT|C)?/);
-  if(m)return`${m[1]}X${m[2]}.${m[3]}R${m[4]}${m[5]||''}`;
-  m=t.match(/(\d{3})R(\d{2})(LT|C)?/);
-  if(m)return`${m[1]}R${m[2]}${m[3]||''}`;
+
+// ============= EXTRAÇÃO DE MEDIDA =============
+function extrairMedida(texto) {
+  if (!texto) return null;
+  const t = normalizar(texto);
+  let m;
+  // Padrões em ordem de especificidade (mais específico primeiro)
+  m = t.match(/(LT)?(\d{3})\/(\d{2})\s?R(\d{2})(C|LT)?/);
+  if (m) return `${m[1] || ''}${m[2]}/${m[3]}R${m[4]}${m[5] || ''}`;
+  m = t.match(/(\d{2})X(\d{1,2})\.?(\d{2})R(\d{2})(LT|C)?/);
+  if (m) return `${m[1]}X${m[2]}.${m[3]}R${m[4]}${m[5] || ''}`;
+  m = t.match(/(\d{3})R(\d{2})(LT|C)?/);
+  if (m) return `${m[1]}R${m[2]}${m[3] || ''}`;
   return null;
 }
-function extrairModeloKw(texto){
-  const t=normalizar(texto);
-  const modelos=['FASTWAY','BRUTUS','CROSSWIND','COMFORT MASTER','CONFORT MASTER','GREEN-MAX','GREENMAX','GREEN MAX','SPORT MASTER','SPORT+','SPORTLINE','GRIP MASTER','ECO MASTER','ECOLOGY','FORZA','CARGOPLUS','CARGO PLUS','RADIAL 666','AR200','A2','A3','A4','A5','B2','C1','C2','W1','W2','Y1','F1','F7','F8','EP100','HP010','HP300','HP 300','HP F1','M/T','H/T','A/T','EXTRA LOAD','XL'];
-  const set=new Set();
-  modelos.forEach(m=>{if(t.includes(m))set.add(m.replace(/[-\s\/]/g,''))});
-  return set;
+
+// ============= EXTRAÇÃO DE MARCA =============
+function extrairMarca(texto) {
+  const t = normalizar(texto);
+  if (t.includes('XBRI') || t.includes('X-BRI') || t.includes('X BRI')) return 'XBRI';
+  if (t.includes('LINGLONG') || t.includes('LING LONG')) return 'LINGLONG';
+  return null;
 }
-async function lerXlsx(file){
-  const buf=await file.arrayBuffer();
-  const wb=XLSX.read(buf,{type:'array'});
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+// ============= EXTRAÇÃO DE ÍNDICE DE CARGA/VELOCIDADE =============
+function extrairIndice(texto) {
+  const t = normalizar(texto);
+  // Formato duplo: 119/116S
+  let m = t.match(/\b(\d{2,3})\/(\d{2,3})\s?([LMNPQRSTUHVWY])\b/);
+  if (m) return { carga: m[1], cargaDupla: m[2], vel: m[3] };
+  // Formato simples: 88H, 91V, 112T
+  m = t.match(/\b(\d{2,3})\s?([LMNPQRSTUHVWY])\b/);
+  if (m) return { carga: m[1], cargaDupla: null, vel: m[2] };
+  return null;
 }
-async function lerPdf(file){
-  const buf=await file.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
-  let texto='';
-  for(let i=1;i<=pdf.numPages;i++){
-    const page=await pdf.getPage(i);
-    const content=await page.getTextContent();
-    const linhas={};
-    content.items.forEach(item=>{
-      const y=Math.round(item.transform[5]);
-      if(!linhas[y])linhas[y]=[];
-      linhas[y].push({x:item.transform[4],str:item.str});
+
+// ============= EXTRAÇÃO DE PR (lonas) =============
+function extrairPR(texto) {
+  const m = normalizar(texto).match(/(\d{1,2})PR/);
+  return m ? parseInt(m[1]) : null;
+}
+
+// ============= EXTRAÇÃO DE MODELO (com normalização inteligente) =============
+function extrairModelo(texto) {
+  const t = normalizar(texto);
+
+  // CRITICAL: BRUTUS LT é o mesmo que BRUTUS T/A (descoberta TR Pneus)
+  if (t.includes('BRUTUS T/A II')) return 'BRUTUS T/A II';
+  if (t.includes('BRUTUS T/A') || t.includes('BRUTUS LT') ||
+      (t.includes('BRUTUS') && !t.includes('M/T') && !t.includes('H/T'))) return 'BRUTUS T/A';
+
+  // Crosswind - múltiplas variações
+  if (t.includes('CROSSWIND M/T')) return 'CROSSWIND M/T';
+  if (t.includes('CROSSWIND A/T')) return 'CROSSWIND A/T';
+  if (t.includes('CROSSWIND H/T')) return 'CROSSWIND H/T';
+  if (t.includes('CROSSWIND HP010') || t.includes('CROSSWIND HP 010')) return 'CROSSWIND HP010';
+
+  // Forza
+  if (t.includes('FORZA A/T')) return 'FORZA A/T';
+  if (t.includes('FORZA H/T')) return 'FORZA H/T';
+
+  // Linglong premium
+  if (t.includes('COMFORT MASTER')) return 'COMFORT MASTER';
+  if (t.includes('SPORT MASTER C/S')) return 'SPORT MASTER C/S';
+  if (t.includes('SPORT MASTER')) return 'SPORT MASTER';
+  if (t.includes('GRIP MASTER')) return 'GRIP MASTER';
+
+  // XBRI premium
+  if (t.includes('SPORT+') || t.includes('SPORT PLUS') || t.includes('SPORT +')) return 'SPORT+';
+  if (t.includes('SPORTLINE')) return 'SPORTLINE';
+
+  // Linglong AR
+  if (t.includes('AR200') || t.includes('AR 200')) return 'AR200';
+
+  // Green-Max
+  if (t.includes('GREEN-MAX HP010') || t.includes('GREEN-MAX HP 010') || t.includes('GREENMAX HP010')) return 'GREEN-MAX HP010';
+  if (t.includes('GREEN-MAX HP300') || t.includes('GREEN-MAX HP 300') || t.includes('GREENMAX HP300')) return 'GREEN-MAX HP300';
+  if (t.includes('GREEN-MAX EP100') || t.includes('GREEN-MAX EP 100')) return 'GREEN-MAX EP100';
+  if (t.includes('ECOTOURING') || t.includes('ECO TOURING')) return 'GREEN-MAX ECOTOURING';
+  if (t.includes('GREEN-MAX VAN HP')) return 'GREEN-MAX VAN HP';
+  if (t.includes('GREEN-MAX VAN') || t.includes('GREENMAX VAN')) return 'GREEN-MAX VAN';
+  if (t.includes('GREEN-MAX EXTRA LOAD') || t.includes('GREEN MAX EXTRA LOAD')) return 'GREEN-MAX EXTRA LOAD';
+
+  // Eco
+  if (t.includes('ECO MASTER EV') || t.includes('ECO MASTER')) return 'ECO MASTER';
+  if (t.includes('ECOLOGY')) return 'ECOLOGY';
+
+  // Fastway variações
+  const fastVars = ['W1', 'W2', 'Y1', 'A2', 'A3', 'A4', 'A5', 'B2', 'C1', 'C2', 'F1', 'XL'];
+  for (const v of fastVars) {
+    if (t.match(new RegExp(`FASTWAY\\s+${v}\\b`))) return `FASTWAY ${v}`;
+  }
+  if (t.includes('FASTWAY')) return 'FASTWAY';
+
+  // Cargo
+  if (t.includes('CARGOPLUS') || t.includes('CARGO PLUS')) return 'CARGOPLUS';
+  if (t.includes('RADIAL 666')) return 'RADIAL 666';
+
+  return null;
+}
+
+// ============= DETECTAR XL/EXTRA LOAD =============
+function detectarReforco(texto) {
+  const t = normalizar(texto);
+  const xl = t.includes(' XL') || t.endsWith('XL') || t.includes(' XL ');
+  const el = t.includes('EXTRA LOAD');
+  return { xl, el, reforcado: xl || el };
+}
+
+// ============= LEITURA DE ARQUIVOS =============
+async function lerXlsx(file) {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+}
+
+async function lerPdf(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let texto = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const linhas = {};
+    content.items.forEach(item => {
+      const y = Math.round(item.transform[5]);
+      if (!linhas[y]) linhas[y] = [];
+      linhas[y].push({ x: item.transform[4], str: item.str });
     });
-    Object.keys(linhas).sort((a,b)=>b-a).forEach(y=>{
-      texto+=linhas[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ')+'\n';
+    Object.keys(linhas).sort((a, b) => b - a).forEach(y => {
+      texto += linhas[y].sort((a, b) => a.x - b.x).map(i => i.str).join(' ') + '\n';
     });
   }
   return texto;
 }
-async function lerSite(file){
-  const data=await lerXlsx(file);
-  const produtos=[];
-  for(let i=1;i<data.length;i++){
-    const row=data[i];
-    const id=row[0],status=row[2],sku=row[3],name=row[4],qtd=row[9],price=row[16];
-    if(name)produtos.push({id,status,sku,name,quantity:qtd,price,medida:extrairMedida(name),modelos:extrairModeloKw(name)});
+
+// ============= LER SITE (exportação iSET) =============
+async function lerSite(file) {
+  const data = await lerXlsx(file);
+  const produtos = [];
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const id = row[0], status = row[2], sku = row[3], name = row[4];
+    const qtd = row[9], price = row[16];
+    if (!name) continue;
+    const medida = extrairMedida(name);
+    const marca = extrairMarca(name);
+    const modelo = extrairModelo(name);
+    const indice = extrairIndice(name);
+    const pr = extrairPR(name);
+    const reforco = detectarReforco(name);
+    produtos.push({
+      id, status, sku, name,
+      quantity: qtd, price,
+      medida, marca, modelo, indice, pr, reforco,
+      origem: 'site'
+    });
   }
   return produtos;
 }
-async function lerPrecos(file){
-  const produtos=[];
-  if(file.name.toLowerCase().endsWith('.pdf')){
-    const texto=await lerPdf(file);
-    texto.split('\n').forEach(linha=>{
-      const medida=extrairMedida(linha);if(!medida)return;
-      const m=linha.match(/R?\$?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+\.\d{2})/);
-      if(m){
-        let p=m[1].replace(/\./g,'').replace(',','.');
-        const preco=parseFloat(p);
-        if(preco>50&&preco<5000)produtos.push({nome:linha.trim(),preco,medida,modelos:extrairModeloKw(linha)});
+
+// ============= LER TABELA DE PREÇOS =============
+async function lerPrecos(file) {
+  const produtos = [];
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    const texto = await lerPdf(file);
+    texto.split('\n').forEach(linha => {
+      const medida = extrairMedida(linha);
+      if (!medida) return;
+      const m = linha.match(/R?\$?\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+\.\d{2})/);
+      if (m) {
+        let p = m[1].replace(/\./g, '').replace(',', '.');
+        const preco = parseFloat(p);
+        if (preco > 50 && preco < 5000) {
+          produtos.push({
+            nome: linha.trim(), preco, medida,
+            marca: extrairMarca(linha),
+            modelo: extrairModelo(linha),
+            indice: extrairIndice(linha),
+            pr: extrairPR(linha),
+            reforco: detectarReforco(linha)
+          });
+        }
       }
     });
-  }else{
-    const data=await lerXlsx(file);
-    data.forEach(row=>{
-      let nome=null,preco=null;
-      row.forEach(v=>{
-        if(typeof v==='string'&&extrairMedida(v))nome=v;
-        else if(typeof v==='number'&&v>50&&v<5000&&preco===null)preco=v;
+  } else {
+    const data = await lerXlsx(file);
+    data.forEach(row => {
+      let nome = null, preco = null;
+      row.forEach(v => {
+        if (typeof v === 'string' && extrairMedida(v)) nome = v;
+        else if (typeof v === 'number' && v > 50 && v < 5000 && preco === null) preco = v;
       });
-      if(nome&&preco)produtos.push({nome,preco,medida:extrairMedida(nome),modelos:extrairModeloKw(nome)});
-    });
-  }
-  return produtos;
-}
-async function lerEstoque(file){
-  const produtos=[];
-  if(file.name.toLowerCase().endsWith('.pdf')){
-    const texto=await lerPdf(file);
-    texto.split('\n').forEach(linha=>{
-      const m=linha.trim().match(/^(\d{2,5})\s+(PNEU\s+.+?)\s+(\d+)$/);
-      if(m){
-        const cod=parseInt(m[1]),desc=m[2],qtd=parseInt(m[3]);
-        const medida=extrairMedida(desc);
-        if(medida)produtos.push({cod,desc,qtd,medida,modelos:extrairModeloKw(desc)});
+      if (nome && preco) {
+        produtos.push({
+          nome, preco,
+          medida: extrairMedida(nome),
+          marca: extrairMarca(nome),
+          modelo: extrairModelo(nome),
+          indice: extrairIndice(nome),
+          pr: extrairPR(nome),
+          reforco: detectarReforco(nome)
+        });
       }
     });
-  }else{
-    const data=await lerXlsx(file);
-    data.forEach(row=>{
-      let cod=null,desc=null,qtd=null;
-      row.forEach(v=>{
-        if(typeof v==='number'&&Number.isInteger(v)){if(cod===null)cod=v;else qtd=v}
-        else if(typeof v==='string'&&extrairMedida(v))desc=v;
+  }
+  return produtos;
+}
+
+// ============= LER ESTOQUE =============
+async function lerEstoque(file) {
+  const produtos = [];
+  if (file.name.toLowerCase().endsWith('.pdf')) {
+    const texto = await lerPdf(file);
+    texto.split('\n').forEach(linha => {
+      const m = linha.trim().match(/^(\d{2,5})\s+(PNEU\s+.+?)\s+(\d+)$/);
+      if (m) {
+        const cod = parseInt(m[1]), desc = m[2], qtd = parseInt(m[3]);
+        const medida = extrairMedida(desc);
+        if (medida) {
+          produtos.push({
+            cod, desc, qtd, medida,
+            marca: extrairMarca(desc),
+            modelo: extrairModelo(desc),
+            indice: extrairIndice(desc),
+            pr: extrairPR(desc),
+            reforco: detectarReforco(desc)
+          });
+        }
+      }
+    });
+  } else {
+    const data = await lerXlsx(file);
+    data.forEach(row => {
+      let cod = null, desc = null, qtd = null;
+      row.forEach(v => {
+        if (typeof v === 'number' && Number.isInteger(v)) {
+          if (cod === null) cod = v; else qtd = v;
+        } else if (typeof v === 'string' && extrairMedida(v)) desc = v;
       });
-      if(cod&&desc&&qtd!==null)produtos.push({cod,desc,qtd,medida:extrairMedida(desc),modelos:extrairModeloKw(desc)});
+      if (cod && desc && qtd !== null) {
+        produtos.push({
+          cod, desc, qtd,
+          medida: extrairMedida(desc),
+          marca: extrairMarca(desc),
+          modelo: extrairModelo(desc),
+          indice: extrairIndice(desc),
+          pr: extrairPR(desc),
+          reforco: detectarReforco(desc)
+        });
+      }
     });
   }
   return produtos;
 }
-function cruzar(itens,site){
-  const matches=[],duvidosos=[],semMatch=[];
-  itens.forEach(item=>{
-    if(!item.medida){semMatch.push({...item,razao:'sem medida'});return}
-    const candidatos=site.filter(s=>s.medida===item.medida);
-    if(!candidatos.length){semMatch.push({...item,razao:'sem produto site'});return}
-    if(candidatos.length===1){matches.push({...item,site:candidatos[0]});return}
-    const scored=candidatos.map(c=>({score:[...item.modelos].filter(m=>c.modelos.has(m)).length,cand:c})).sort((a,b)=>b.score-a.score);
-    if(scored[0].score>0&&(scored.length===1||scored[0].score>scored[1].score))matches.push({...item,site:scored[0].cand});
-    else duvidosos.push({...item,candidatos:scored.map(s=>s.cand)});
+
+// ============= MATCHING INTELIGENTE =============
+function cruzarInteligente(itens, site) {
+  const matches = [];
+  const duvidosos = [];
+  const semMatch = [];
+
+  itens.forEach(item => {
+    if (!item.medida) {
+      semMatch.push({ ...item, razao: 'sem medida' });
+      return;
+    }
+
+    // 1. Filtro inicial: mesma medida
+    let candidatos = site.filter(s => s.medida === item.medida);
+    if (!candidatos.length) {
+      semMatch.push({ ...item, razao: 'sem produto com essa medida no site' });
+      return;
+    }
+
+    // 2. Filtro por marca (se tem marca em ambos)
+    if (item.marca) {
+      const comMarca = candidatos.filter(c => c.marca === item.marca);
+      if (comMarca.length > 0) candidatos = comMarca;
+    }
+
+    // 3. Score de matching (modelo + reforço + índice)
+    const scored = candidatos.map(c => {
+      let score = 0;
+      const motivos = [];
+
+      // Modelo bate exato? +100 (alta confiança)
+      if (item.modelo && c.modelo && item.modelo === c.modelo) {
+        score += 100;
+        motivos.push('modelo=' + item.modelo);
+      } else if (item.modelo && c.modelo && item.modelo !== c.modelo) {
+        // Modelo diferente é um -SINAL FORTE de produto diferente
+        score -= 50;
+        motivos.push(`modelo_dif(${c.modelo}!=${item.modelo})`);
+      }
+
+      // Reforço (XL/Extra Load) tem que bater
+      if (item.reforco.reforcado === c.reforco.reforcado) {
+        score += 20;
+      } else {
+        score -= 30; // XL vs não-XL = produto diferente
+        motivos.push('reforço_diferente');
+      }
+
+      // Índice de carga bate?
+      if (item.indice && c.indice && item.indice.carga === c.indice.carga) {
+        score += 30;
+        motivos.push('carga_ok');
+      } else if (item.indice && c.indice && item.indice.carga !== c.indice.carga) {
+        score -= 20;
+        motivos.push(`carga_dif(${c.indice.carga}!=${item.indice.carga})`);
+      }
+
+      // Índice de velocidade bate?
+      if (item.indice && c.indice && item.indice.vel === c.indice.vel) {
+        score += 20;
+      } else if (item.indice && c.indice && item.indice.vel !== c.indice.vel) {
+        score -= 10;
+      }
+
+      // PR (lonas) bate?
+      if (item.pr && c.pr && item.pr === c.pr) score += 15;
+      else if (item.pr && c.pr && item.pr !== c.pr) score -= 15;
+
+      return { score, motivos, cand: c };
+    }).sort((a, b) => b.score - a.score);
+
+    const best = scored[0];
+
+    // Análise da confiança
+    if (best.score >= 100) {
+      // Match excelente (modelo bate)
+      matches.push({ ...item, site: best.cand, score: best.score, motivos: best.motivos });
+    } else if (best.score >= 50 && (scored.length === 1 || best.score - scored[1].score >= 30)) {
+      // Match razoável (diferença grande para o segundo)
+      matches.push({ ...item, site: best.cand, score: best.score, motivos: best.motivos });
+    } else if (best.score > 0) {
+      // Duvidoso - precisa revisão
+      duvidosos.push({
+        ...item,
+        candidatos: scored.slice(0, 3).map(s => ({ ...s.cand, score: s.score, motivos: s.motivos }))
+      });
+    } else {
+      // Score negativo ou zero = sem match real
+      semMatch.push({
+        ...item,
+        razao: best.motivos.length ? `modelo/reforço divergente (${best.motivos.join(', ')})` : 'sem confiança suficiente'
+      });
+    }
   });
-  return{matches,duvidosos,semMatch};
+
+  return { matches, duvidosos, semMatch };
 }
-function agrupar(matches,campoQtd){
-  const ag={};
-  matches.forEach(m=>{
-    const id=m.site.id;
-    if(!ag[id])ag[id]={site:m.site,qtdTotal:0,preco:null,origens:[]};
-    if(m[campoQtd])ag[id].qtdTotal+=m[campoQtd];
-    if(m.preco)ag[id].preco=m.preco;
+
+// ============= AGRUPAMENTO =============
+function agrupar(matches, campoQtd) {
+  const ag = {};
+  matches.forEach(m => {
+    const id = m.site.id;
+    if (!ag[id]) ag[id] = { site: m.site, qtdTotal: 0, preco: null, origens: [] };
+    if (campoQtd && m[campoQtd]) ag[id].qtdTotal += m[campoQtd];
+    if (m.preco) ag[id].preco = m.preco;
     ag[id].origens.push(m);
   });
   return ag;
 }
-function gerarPlanilha(agrupado,modo){
-  const ws_data=[HEADERS_ISET.map(h=>h||'')];
-  Object.entries(agrupado).forEach(([id,dados])=>{
-    const linha=new Array(38).fill('');
-    linha[0]=parseInt(id);
-    linha[2]=dados.site.status||'active';
-    linha[4]=dados.site.name;
-    if((modo==='estoque'||modo==='ambos')&&dados.qtdTotal>0)linha[9]=dados.qtdTotal;
-    linha[11]=QTD_MAX_BUY;
-    linha[13]=STOCK_METHOD;
-    if((modo==='preco'||modo==='ambos')&&dados.preco)linha[16]=dados.preco;
+
+// ============= GERAÇÃO DE PLANILHA =============
+function gerarPlanilha(agrupado, modo) {
+  const ws_data = [HEADERS_ISET];
+  Object.entries(agrupado).forEach(([id, dados]) => {
+    const linha = new Array(38).fill('');
+    linha[0] = parseInt(id);
+    if ((modo === 'estoque' || modo === 'ambos') && dados.qtdTotal > 0) {
+      linha[9] = dados.qtdTotal;
+      linha[11] = QTD_MAX_BUY;
+      linha[13] = STOCK_METHOD;
+    }
+    if ((modo === 'preco' || modo === 'ambos') && dados.preco) {
+      linha[16] = dados.preco;
+    }
     ws_data.push(linha);
   });
-  const ws=XLSX.utils.aoa_to_sheet(ws_data);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Produtos');
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Produtos');
   return wb;
 }
-async function processar(){
-  const btn=document.getElementById('cta');
-  btn.disabled=true;
-  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>PROCESSANDO...';
+
+// ============= GERAÇÃO DE RELATÓRIO =============
+function gerarRelatorio(matches, duvidosos, semMatch, modo) {
+  const ws_data = [
+    ['STATUS', 'ORIGEM', 'ID iSET', 'MEDIDA', 'MARCA', 'MODELO', 'NOME no Site', 'NOME na Tabela', 'PREÇO', 'QTD', 'MOTIVO/SCORE']
+  ];
+
+  matches.forEach(m => {
+    ws_data.push([
+      '✓ MATCH',
+      m.origem || (m.preco ? 'preço' : 'estoque'),
+      m.site.id,
+      m.medida || '-',
+      m.marca || '-',
+      m.modelo || '-',
+      m.site.name || '-',
+      m.nome || m.desc || '-',
+      m.preco || '-',
+      m.qtd || '-',
+      `score=${m.score} (${m.motivos ? m.motivos.join(', ') : ''})`
+    ]);
+  });
+
+  duvidosos.forEach(d => {
+    const candStr = d.candidatos.map(c => `ID${c.id} (score=${c.score})`).join(' | ');
+    ws_data.push([
+      '⚠ DUVIDOSO', '',
+      candStr,
+      d.medida || '-',
+      d.marca || '-',
+      d.modelo || '-',
+      '(vários candidatos)',
+      d.nome || d.desc || '-',
+      d.preco || '-',
+      d.qtd || '-',
+      'precisa revisão manual'
+    ]);
+  });
+
+  semMatch.forEach(s => {
+    ws_data.push([
+      '✗ SEM MATCH', '',
+      '-',
+      s.medida || '-',
+      s.marca || '-',
+      s.modelo || '-',
+      '-',
+      s.nome || s.desc || '-',
+      s.preco || '-',
+      s.qtd || '-',
+      s.razao || '-'
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols'] = [
+    { wch: 14 }, { wch: 10 }, { wch: 14 }, { wch: 18 }, { wch: 10 },
+    { wch: 22 }, { wch: 55 }, { wch: 55 }, { wch: 10 }, { wch: 8 }, { wch: 50 }
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+  return wb;
+}
+
+// ============= PROCESSAR =============
+async function processar() {
+  const btn = document.getElementById('cta');
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>PROCESSANDO...</span>';
   document.getElementById('result').classList.remove('show');
-  document.getElementById('step-2').classList.add('active');
-  document.getElementById('step-3').classList.remove('active');
   clearLog();
-  try{
-    log('═══════════════════════════════════════════','info');
-    log(`> INICIANDO ${new Date().toLocaleString('pt-BR')}`,'info');
-    log('═══════════════════════════════════════════','info');
-    log('\n[1/3] Lendo exportação do site iSET...','info');
-    const site=await lerSite(arquivos.site);
-    log(`      ✓ ${site.length} produtos do site carregados`,'ok');
-    let agrupadoFinal={};
-    if(modoAtual==='preco'||modoAtual==='ambos'){
-      log('\n[2/3] Lendo tabela de preços TR Pneus...','info');
-      const precos=await lerPrecos(arquivos.precos);
-      log(`      ✓ ${precos.length} produtos com preço identificados`,'ok');
-      log('      → Cruzando preços com site (medida + modelo)...','info');
-      const{matches,duvidosos,semMatch}=cruzar(precos,site);
-      log(`      ✓ ${matches.length} matches confirmados`,'ok');
-      if(duvidosos.length)log(`      ⚠ ${duvidosos.length} duvidosos (revisar manualmente)`,'warn');
-      if(semMatch.length)log(`      ⚠ ${semMatch.length} sem produto correspondente no site`,'warn');
-      const ag=agrupar(matches,'_');
-      Object.entries(ag).forEach(([id,d])=>agrupadoFinal[id]=d);
+
+  try {
+    log('═══════════════════════════════════════════', 'info');
+    log(`> SUITE v2.0 · ${new Date().toLocaleString('pt-BR')}`, 'info');
+    log('═══════════════════════════════════════════', 'info');
+    log('\n[1/3] Lendo exportação do site iSET...', 'info');
+    const site = await lerSite(arquivos.site);
+    log(`      ✓ ${site.length} produtos carregados`, 'ok');
+
+    // Stats do site
+    const comModelo = site.filter(s => s.modelo).length;
+    const comIndice = site.filter(s => s.indice).length;
+    log(`      → ${comModelo} com modelo identificado, ${comIndice} com índice`, 'dim');
+
+    let agrupadoFinal = {};
+    let todosMatches = [];
+    let todosDuvidosos = [];
+    let todosSemMatch = [];
+
+    if (modoAtual === 'preco' || modoAtual === 'ambos') {
+      log('\n[2/3] Lendo tabela de preços TR Pneus...', 'info');
+      const precos = await lerPrecos(arquivos.precos);
+      log(`      ✓ ${precos.length} produtos com preço identificados`, 'ok');
+      log('      → Cruzando com matching inteligente...', 'info');
+      log('      → (modelo + reforço XL + índice + PR)', 'dim');
+
+      const r = cruzarInteligente(precos, site);
+      log(`      ✓ ${r.matches.length} matches confiantes`, 'ok');
+      if (r.duvidosos.length) log(`      ⚠ ${r.duvidosos.length} duvidosos (revisar manualmente)`, 'warn');
+      if (r.semMatch.length) log(`      ⚠ ${r.semMatch.length} sem correspondente no site`, 'warn');
+
+      const ag = agrupar(r.matches, null);
+      Object.entries(ag).forEach(([id, d]) => agrupadoFinal[id] = d);
+      todosMatches.push(...r.matches.map(m => ({ ...m, origem: 'preço' })));
+      todosDuvidosos.push(...r.duvidosos.map(d => ({ ...d, origem: 'preço' })));
+      todosSemMatch.push(...r.semMatch.map(s => ({ ...s, origem: 'preço' })));
     }
-    if(modoAtual==='estoque'||modoAtual==='ambos'){
-      log('\n[3/3] Lendo planilha de estoque do galpão...','info');
-      const estoque=await lerEstoque(arquivos.estoque);
-      const totalPneus=estoque.reduce((s,p)=>s+p.qtd,0);
-      log(`      ✓ ${estoque.length} itens / ${totalPneus} pneus físicos`,'ok');
-      log('      → Cruzando estoque com site (medida + modelo)...','info');
-      const{matches,duvidosos,semMatch}=cruzar(estoque,site);
-      log(`      ✓ ${matches.length} matches confirmados`,'ok');
-      if(duvidosos.length)log(`      ⚠ ${duvidosos.length} duvidosos`,'warn');
-      if(semMatch.length)log(`      ⚠ ${semMatch.length} no estoque sem cadastro no site`,'warn');
-      const ag=agrupar(matches,'qtd');
-      Object.entries(ag).forEach(([id,d])=>{
-        if(!agrupadoFinal[id])agrupadoFinal[id]=d;
-        else agrupadoFinal[id].qtdTotal=d.qtdTotal;
+
+    if (modoAtual === 'estoque' || modoAtual === 'ambos') {
+      log('\n[3/3] Lendo estoque do galpão...', 'info');
+      const estoque = await lerEstoque(arquivos.estoque);
+      const totalPneus = estoque.reduce((s, p) => s + p.qtd, 0);
+      log(`      ✓ ${estoque.length} itens / ${totalPneus} pneus físicos`, 'ok');
+      log('      → Cruzando com matching inteligente...', 'info');
+
+      const r = cruzarInteligente(estoque, site);
+      log(`      ✓ ${r.matches.length} matches confiantes`, 'ok');
+      if (r.duvidosos.length) log(`      ⚠ ${r.duvidosos.length} duvidosos`, 'warn');
+      if (r.semMatch.length) log(`      ⚠ ${r.semMatch.length} no estoque sem cadastro no site`, 'warn');
+
+      const ag = agrupar(r.matches, 'qtd');
+      Object.entries(ag).forEach(([id, d]) => {
+        if (!agrupadoFinal[id]) agrupadoFinal[id] = d;
+        else agrupadoFinal[id].qtdTotal = d.qtdTotal;
       });
+      todosMatches.push(...r.matches.map(m => ({ ...m, origem: 'estoque' })));
+      todosDuvidosos.push(...r.duvidosos.map(d => ({ ...d, origem: 'estoque' })));
+      todosSemMatch.push(...r.semMatch.map(s => ({ ...s, origem: 'estoque' })));
     }
-    log('\n→ Gerando planilha .xlsx final...','info');
-    const wb=gerarPlanilha(agrupadoFinal,modoAtual);
-    planilhaGerada=wb;
-    const total=Object.keys(agrupadoFinal).length;
-    log(`  ✓ ${total} produtos consolidados na planilha final`,'ok');
-    log('\n═══════════════════════════════════════════','ok');
-    log('  ✓ PROCESSAMENTO CONCLUÍDO COM SUCESSO','ok');
-    log('═══════════════════════════════════════════','ok');
-    log('\n→ Planilha pronta para download abaixo','info');
-    const stats=document.getElementById('stats');
-    const modoEmoji={ambos:'⚡',estoque:'📦',preco:'💰'}[modoAtual];
-    stats.innerHTML=`
-      <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">PRODUTOS</div></div>
-      <div class="stat"><div class="stat-val">${site.length}</div><div class="stat-lbl">NO SITE</div></div>
+
+    log('\n→ Gerando planilha .xlsx final...', 'info');
+    const wb = gerarPlanilha(agrupadoFinal, modoAtual);
+    planilhaGerada = wb;
+
+    log('→ Gerando relatório completo...', 'info');
+    const wbRel = gerarRelatorio(todosMatches, todosDuvidosos, todosSemMatch, modoAtual);
+    relatorioCompleto = wbRel;
+
+    const total = Object.keys(agrupadoFinal).length;
+    log(`  ✓ ${total} produtos consolidados`, 'ok');
+    log(`  ✓ Relatório com ${todosMatches.length} matches, ${todosDuvidosos.length} duvidosos, ${todosSemMatch.length} sem match`, 'ok');
+
+    log('\n═══════════════════════════════════════════', 'ok');
+    log('  ✓ PROCESSAMENTO CONCLUÍDO', 'ok');
+    log('═══════════════════════════════════════════', 'ok');
+    log('\n→ Planilha pronta para download abaixo', 'info');
+    log('→ Baixe TAMBÉM o relatório para revisar duvidosos', 'info');
+
+    const stats = document.getElementById('stats');
+    const modoEmoji = { ambos: '⚡', estoque: '📦', preco: '💰' }[modoAtual];
+    stats.innerHTML = `
+      <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">ATUALIZAR</div></div>
+      <div class="stat"><div class="stat-val">${todosDuvidosos.length}</div><div class="stat-lbl">DUVIDOSOS</div></div>
+      <div class="stat"><div class="stat-val">${todosSemMatch.length}</div><div class="stat-lbl">SEM MATCH</div></div>
       <div class="stat"><div class="stat-val">${modoEmoji}</div><div class="stat-lbl">MODO</div></div>
     `;
     document.getElementById('result').classList.add('show');
-    document.getElementById('step-3').classList.add('active');
-    setTimeout(()=>document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'}),200);
-  }catch(err){
-    log(`\n✗ ERRO: ${err.message}`,'err');
+    setTimeout(() => document.getElementById('result').scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+
+  } catch (err) {
+    log(`\n✗ ERRO: ${err.message}`, 'err');
     console.error(err);
-  }finally{
-    btn.disabled=false;
-    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>GERAR PLANILHA DE ATUALIZAÇÃO';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg><span>GERAR PLANILHA</span>';
   }
 }
-function baixarPlanilha(){
-  if(!planilhaGerada)return;
-  const ts=new Date().toISOString().replace(/[-:T]/g,'').slice(0,15);
-  XLSX.writeFile(planilhaGerada,`ATUALIZAR_iset_${ts}.xlsx`);
+
+// ============= DOWNLOADS =============
+function baixarPlanilha() {
+  if (!planilhaGerada) return;
+  const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+  XLSX.writeFile(planilhaGerada, `ATUALIZAR_iset_${ts}.xlsx`);
 }
-</script>
-</body>
-</html>
+function baixarRelatorio() {
+  if (!relatorioCompleto) return;
+  const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+  XLSX.writeFile(relatorioCompleto, `RELATORIO_${ts}.xlsx`);
+}
